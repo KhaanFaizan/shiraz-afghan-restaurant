@@ -1,0 +1,49 @@
+/* Google Fonts — must come before @import "tailwindcss" */
+@import url("https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400&family=DM+Sans:wght@300;400;500;600&display=swap");
+
+@import "tailwindcss";
+
+@theme {
+  /* ── Colour palette ── */
+  --color-night:     #0a0a0a;
+  --color-charcoal:  #111111;
+  --color-surface:   #1a1a1a;
+  --color-border:    #2a2a2a;
+
+  --color-gold:      #c2844b;
+  --color-gold-light:#d4976a;
+  --color-gold-muted:#8a5a2e;
+
+  --color-cream:     #f7efe2;
+  --color-cream-dim: #c8bfb3;
+
+  /* ── Typography ── */
+  --font-display:  "Playfair Display", Georgia, serif;
+  --font-body:     "DM Sans", system-ui, sans-serif;
+
+  /* ── Spacing extras ── */
+  --spacing-section: 7rem;
+}
+
+
+/* Base resets */
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background-color: var(--color-night);
+  color: var(--color-cream);
+  font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: var(--color-night); }
+::-webkit-scrollbar-thumb { background: var(--color-gold-muted); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--color-gold); }
