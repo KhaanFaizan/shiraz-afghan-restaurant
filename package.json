@@ -1,0 +1,14 @@
+{
+  "name": "shiraz-afghan-restaurant",
+  "version": "1.0.0",
+  "description": "Shiraz Afghan Restaurant — full-stack monorepo",
+  "private": true,
+  "scripts": {
+    "dev": "concurrently --names \"SERVER,CLIENT\" --prefix-colors \"yellow,cyan\" --prefix \"[{name}]\" \"npm run dev --prefix server\" \"npm run dev --prefix client\"",
+    "server": "npm run dev --prefix server",
+    "client": "npm run dev --prefix client"
+  },
+  "devDependencies": {
+    "concurrently": "^10.0.3"
+  }
+}
