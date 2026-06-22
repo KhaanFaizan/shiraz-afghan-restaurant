@@ -1,11 +1,12 @@
 import axios from 'axios'
 
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:5000/api',
+  // Relative URL — Vite proxies /api → http://localhost:5000 in dev.
+  // In production, set VITE_API_URL to your deployed backend URL.
+  baseURL: import.meta.env.VITE_API_URL || '/api',
   headers: {
     'Content-Type': 'application/json',
   },
-  withCredentials: true,
 })
 
 // Attach auth token from localStorage if present
