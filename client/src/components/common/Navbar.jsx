@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Link, NavLink } from 'react-router-dom'
-import { Menu, X } from 'lucide-react'
+import { Menu, X, LayoutDashboard } from 'lucide-react'
 
 const navLinks = [
   { to: '/', label: 'Home' },
@@ -54,13 +54,22 @@ export default function Navbar() {
           ))}
         </nav>
 
-        {/* Book CTA */}
-        <Link
-          to="/booking"
-          className="hidden md:inline-flex items-center px-5 py-2 text-xs tracking-[0.2em] uppercase border border-[#c2844b] text-[#c2844b] hover:bg-[#c2844b] hover:text-[#0a0a0a] transition-all duration-300"
-        >
-          Reserve
-        </Link>
+        {/* Desktop CTAs */}
+        <div className="hidden md:flex items-center gap-3">
+          <Link
+            to="/admin"
+            className="inline-flex items-center gap-2 px-4 py-2 text-xs tracking-[0.2em] uppercase border border-[#2a2a2a] text-[#c8bfb3] hover:border-[#c8bfb3]/50 hover:text-[#f7efe2] transition-all duration-300"
+          >
+            <LayoutDashboard size={13} />
+            View Bookings
+          </Link>
+          <Link
+            to="/booking"
+            className="inline-flex items-center px-5 py-2 text-xs tracking-[0.2em] uppercase border border-[#c2844b] text-[#c2844b] hover:bg-[#c2844b] hover:text-[#0a0a0a] transition-all duration-300"
+          >
+            Reserve
+          </Link>
+        </div>
 
         {/* Mobile toggle */}
         <button
@@ -90,6 +99,14 @@ export default function Navbar() {
               {label}
             </NavLink>
           ))}
+          <Link
+            to="/admin"
+            onClick={() => setMenuOpen(false)}
+            className="flex items-center gap-2 text-sm tracking-widest uppercase py-2 text-[#c8bfb3] hover:text-[#f7efe2] transition-colors"
+          >
+            <LayoutDashboard size={14} />
+            View Bookings
+          </Link>
         </div>
       )}
     </header>

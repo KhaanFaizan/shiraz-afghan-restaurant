@@ -12,3 +12,24 @@ export async function getAllTables(req, res) {
     sendError(res, 'Failed to fetch tables', 500)
   }
 }
+
+export async function toggleOutOfService(req, res) {
+  const { id } = req.params
+  if (!id || id.length !== 24) return sendError(res, 'Invalid table ID', 400)
+
+  try {
+    const table = await RestaurantTable.findById(id)
+    if (!table) return sendError(res, 'Table not found', 404)
+
+    table.isOutOfService = !table.isOutOfService
+    await table.save()
+
+    const msg = table.isOutOfService
+      ? `Table ${table.name} marked as out of service`
+      : `Table ${table.name} is back in service`
+
+    sendSuccess(res, table.toObject(), msg)
+  } catch (err) {
+    sendError(res, 'Failed to update table status', 500)
+  }
+}

@@ -59,6 +59,20 @@ export const listReservationsSchema = z.object({
   view: z.enum(['day', 'week']).optional().default('day'),
 })
 
+// ── Modify reservation body ───────────────────────────────────────────────────
+
+export const modifyReservationSchema = z.object({
+  customerName:   z.string().trim().min(2).optional(),
+  phone:          z.string().trim().min(7).optional(),
+  specialRequest: z.string().trim().optional(),
+  date:           dateString.optional(),
+  time:           timeString.optional(),
+  partySize:      z.number().int().min(1).max(20).optional(),
+  status:         z.enum(['CONFIRMED', 'CANCELLED', 'COMPLETED', 'NO_SHOW']).optional(),
+}).refine(data => Object.keys(data).length > 0, {
+  message: 'At least one field must be provided',
+})
+
 // ── Helper: parse + return formatted Zod errors ──────────────────────────────
 
 export function parseSchema(schema, data) {

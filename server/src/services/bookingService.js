@@ -385,3 +385,166 @@ export async function listReservations({ date, view = 'day' } = {}) {
     .sort({ date: 1, startTime: 1 })
     .lean()
 }
+
+// ── Service 5: Modify a reservation ──────────────────────────────────────────
+
+export async function modifyReservation(reservationId, changes) {
+  const reservation = await Reservation.findById(reservationId)
+  if (!reservation) {
+    throw Object.assign(new Error('Reservation not found'), { statusCode: 404 })
+  }
+
+  if (reservation.status === RESERVATION_STATUS.COMPLETED) {
+    throw Object.assign(new Error('Completed reservations cannot be modified'), { statusCode: 400 })
+  }
+
+  // Extract the current time string from the stored UTC startTime
+  const existingTimeStr = toTimeStr(
+    reservation.startTime.getUTCHours() * 60 + reservation.startTime.getUTCMinutes()
+  )
+
+  const newDate      = changes.date      ?? reservation.date
+  const newTime      = changes.time      ?? existingTimeStr
+  const newPartySize = changes.partySize ?? reservation.partySize
+  const newStatus    = changes.status    ?? reservation.status
+
+  const scheduleChanged =
+    newDate      !== reservation.date ||
+    newTime      !== existingTimeStr  ||
+    newPartySize !== reservation.partySize
+
+  const statusBecomingCancelled =
+    newStatus === RESERVATION_STATUS.CANCELLED &&
+    reservation.status !== RESERVATION_STATUS.CANCELLED
+
+  // ── Status-only cancel (no schedule change) ─────────────────────────────────
+  if (statusBecomingCancelled && !scheduleChanged) {
+    reservation.status = RESERVATION_STATUS.CANCELLED
+    if (changes.customerName)   reservation.customerName   = changes.customerName.trim()
+    if (changes.phone)          reservation.phone          = changes.phone.trim()
+    if (changes.specialRequest !== undefined) reservation.specialRequest = changes.specialRequest.trim()
+    await reservation.save()
+    await BookingLock.deleteMany({ reservation: reservation._id })
+    return Reservation.findById(reservation._id).populate('table').lean()
+  }
+
+  // ── Non-schedule update (customer details / status only) ────────────────────
+  if (!scheduleChanged) {
+    if (changes.customerName !== undefined)   reservation.customerName   = changes.customerName.trim()
+    if (changes.phone !== undefined)          reservation.phone          = changes.phone.trim()
+    if (changes.specialRequest !== undefined) reservation.specialRequest = changes.specialRequest.trim()
+    if (changes.status)                       reservation.status         = changes.status
+    await reservation.save()
+    return Reservation.findById(reservation._id).populate('table').lean()
+  }
+
+  // ── Schedule changed — re-book with conflict prevention ─────────────────────
+  const settings = await BookingSetting.findOne().lean()
+  if (!settings) throw new Error('Booking settings not configured')
+
+  const { slotLengthMinutes, reservationDurationMinutes } = settings
+
+  // Validate new date is not in the past
+  const todayUTC = new Date()
+  todayUTC.setUTCHours(0, 0, 0, 0)
+  const selectedUTC = new Date(`${newDate}T00:00:00.000Z`)
+
+  if (selectedUTC < todayUTC) {
+    throw Object.assign(new Error('Cannot move a reservation to a past date'), { statusCode: 400 })
+  }
+
+  // Validate opening hours
+  const dayOfWeek    = selectedUTC.getUTCDay()
+  const openingHour  = await OpeningHour.findOne({ dayOfWeek }).lean()
+  if (!openingHour || openingHour.isClosed) {
+    throw Object.assign(new Error('The restaurant is closed on that day'), { statusCode: 400 })
+  }
+  const openMin  = toMinutes(openingHour.openTime)
+  const closeMin = toMinutes(openingHour.closeTime)
+  const slotMin  = toMinutes(newTime)
+  if (slotMin < openMin || slotMin + reservationDurationMinutes > closeMin) {
+    throw Object.assign(new Error('The requested time is outside opening hours'), { statusCode: 400 })
+  }
+
+  const newStartTime = buildUTCDate(newDate, newTime)
+  const newEndTime   = new Date(newStartTime.getTime() + reservationDurationMinutes * 60_000)
+  const segments     = buildSegmentTimes(newTime, reservationDurationMinutes, slotLengthMinutes)
+
+  // Find suitable tables (smallest first)
+  const suitableTables = await RestaurantTable.find({
+    capacity:       { $gte: newPartySize },
+    isOutOfService: false,
+  }).sort({ capacity: 1, name: 1 }).lean()
+
+  if (suitableTables.length === 0) {
+    throw Object.assign(new Error('No tables available for this party size'), { statusCode: 409 })
+  }
+
+  // Release existing locks BEFORE attempting new ones
+  await BookingLock.deleteMany({ reservation: reservation._id })
+
+  for (const table of suitableTables) {
+    // Check overlaps — EXCLUDE the current reservation being modified
+    const overlap = await Reservation.findOne({
+      _id:       { $ne: reservation._id },
+      table:     table._id,
+      status:    RESERVATION_STATUS.CONFIRMED,
+      startTime: { $lt: newEndTime },
+      endTime:   { $gt: newStartTime },
+    }).lean()
+
+    if (overlap) continue
+
+    // Try to acquire locks
+    const lockDocs       = segments.map(seg => ({
+      lockKey:  buildLockKey(table._id, newDate, seg),
+      table:    table._id,
+      date:     newDate,
+      slotTime: seg,
+    }))
+    const createdLockIds = []
+    let lockConflict     = false
+
+    for (const lockDoc of lockDocs) {
+      try {
+        const lock = await BookingLock.create(lockDoc)
+        createdLockIds.push(lock._id)
+      } catch (err) {
+        if (err.code === 11000) { lockConflict = true; break }
+        throw err
+      }
+    }
+
+    if (lockConflict) {
+      if (createdLockIds.length > 0) {
+        await BookingLock.deleteMany({ _id: { $in: createdLockIds } })
+      }
+      continue
+    }
+
+    // All locks acquired — update the reservation
+    reservation.date           = newDate
+    reservation.startTime      = newStartTime
+    reservation.endTime        = newEndTime
+    reservation.partySize      = newPartySize
+    reservation.table          = table._id
+    reservation.status         = newStatus
+    if (changes.customerName !== undefined)   reservation.customerName   = changes.customerName.trim()
+    if (changes.phone !== undefined)          reservation.phone          = changes.phone.trim()
+    if (changes.specialRequest !== undefined) reservation.specialRequest = changes.specialRequest.trim()
+
+    await reservation.save()
+
+    await BookingLock.updateMany(
+      { _id: { $in: createdLockIds } },
+      { reservation: reservation._id }
+    )
+
+    return Reservation.findById(reservation._id).populate('table').lean()
+  }
+
+  throw Object.assign(
+    new Error('No availability for the requested time. Please choose a different slot.'),
+    { statusCode: 409 }
+  )
+}

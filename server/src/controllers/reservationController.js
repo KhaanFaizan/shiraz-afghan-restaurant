@@ -2,9 +2,11 @@ import {
   createReservation,
   cancelReservation,
   listReservations,
+  modifyReservation,
 } from '../services/bookingService.js'
 import {
   createReservationSchema,
+  modifyReservationSchema,
   listReservationsSchema,
   parseSchema,
 } from '../validators/bookingValidator.js'
@@ -39,6 +41,22 @@ export async function getReservations(req, res) {
       reservations,
       `${reservations.length} reservation${reservations.length !== 1 ? 's' : ''} found`
     )
+  } catch (err) {
+    sendError(res, err.message, err.statusCode || 500)
+  }
+}
+
+// PATCH /api/reservations/:id  — modify a reservation
+export async function patchReservation(req, res) {
+  const { id } = req.params
+  if (!id || id.length !== 24) return sendError(res, 'Invalid reservation ID', 400)
+
+  const parsed = parseSchema(modifyReservationSchema, req.body)
+  if (!parsed.success) return sendError(res, 'Validation failed', 400, parsed.errors)
+
+  try {
+    const reservation = await modifyReservation(id, parsed.data)
+    sendSuccess(res, reservation, 'Reservation updated successfully')
   } catch (err) {
     sendError(res, err.message, err.statusCode || 500)
   }
