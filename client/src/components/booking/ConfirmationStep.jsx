@@ -9,16 +9,24 @@ function formatDate(dateStr) {
   })
 }
 
-function formatTime(t) {
-  if (!t) return ''
-  const [h, m] = t.split(':').map(Number)
+/**
+ * Format a UTC time from a startTime ISO string returned by the API.
+ * We parse UTC hours/minutes explicitly rather than using slice() so this
+ * works regardless of where the string boundaries fall.
+ */
+function formatStartTime(isoString) {
+  if (!isoString) return ''
+  const d = new Date(isoString)
+  if (isNaN(d.getTime())) return ''
+  const h = d.getUTCHours()
+  const m = d.getUTCMinutes()
   const p = h >= 12 ? 'PM' : 'AM'
   return `${h % 12 || 12}:${String(m).padStart(2, '0')} ${p}`
 }
 
 const detail = [
   { Icon: CalendarDays, label: 'Date',  getValue: (r) => formatDate(r.date) },
-  { Icon: Clock,        label: 'Time',  getValue: (r) => formatTime(r.date ? r.startTime?.slice(11, 16) : '') },
+  { Icon: Clock,        label: 'Time',  getValue: (r) => formatStartTime(r.startTime) },
   { Icon: Users,        label: 'Party', getValue: (r) => `${r.partySize} ${r.partySize === 1 ? 'guest' : 'guests'}` },
   { Icon: MapPin,       label: 'Table', getValue: (r) => r.table ? `${r.table.name} — ${r.table.zone}` : '' },
 ]

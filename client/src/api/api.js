@@ -29,4 +29,23 @@ api.interceptors.response.use(
   }
 )
 
+/**
+ * Extract a human-readable error message from an Axios error.
+ *
+ * Handles three cases:
+ *   1. No response (server down / network error)
+ *   2. Backend returned Zod validation errors array
+ *   3. Backend returned a plain message string
+ */
+export function extractApiError(err, fallback = 'Something went wrong. Please try again.') {
+  if (!err.response) {
+    return 'Unable to connect to the server. Please check your connection.'
+  }
+  const { data } = err.response
+  if (Array.isArray(data?.errors) && data.errors.length > 0) {
+    return data.errors.map((e) => e.message).join('. ')
+  }
+  return data?.message || fallback
+}
+
 export default api

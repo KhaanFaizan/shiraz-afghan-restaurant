@@ -1,5 +1,8 @@
+import mongoose from 'mongoose'
 import RestaurantTable from '../models/RestaurantTable.js'
 import { sendSuccess, sendError } from '../utils/response.js'
+
+const isValidObjectId = (id) => mongoose.Types.ObjectId.isValid(id)
 
 export async function getAllTables(req, res) {
   try {
@@ -15,7 +18,7 @@ export async function getAllTables(req, res) {
 
 export async function toggleOutOfService(req, res) {
   const { id } = req.params
-  if (!id || id.length !== 24) return sendError(res, 'Invalid table ID', 400)
+  if (!isValidObjectId(id)) return sendError(res, 'Invalid table ID', 400)
 
   try {
     const table = await RestaurantTable.findById(id)

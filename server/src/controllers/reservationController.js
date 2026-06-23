@@ -1,3 +1,4 @@
+import mongoose from 'mongoose'
 import {
   createReservation,
   cancelReservation,
@@ -11,6 +12,8 @@ import {
   parseSchema,
 } from '../validators/bookingValidator.js'
 import { sendSuccess, sendError } from '../utils/response.js'
+
+const isValidObjectId = (id) => mongoose.Types.ObjectId.isValid(id)
 
 // POST /api/reservations
 export async function postReservation(req, res) {
@@ -49,7 +52,7 @@ export async function getReservations(req, res) {
 // PATCH /api/reservations/:id  — modify a reservation
 export async function patchReservation(req, res) {
   const { id } = req.params
-  if (!id || id.length !== 24) return sendError(res, 'Invalid reservation ID', 400)
+  if (!isValidObjectId(id)) return sendError(res, 'Invalid reservation ID', 400)
 
   const parsed = parseSchema(modifyReservationSchema, req.body)
   if (!parsed.success) return sendError(res, 'Validation failed', 400, parsed.errors)
@@ -65,10 +68,7 @@ export async function patchReservation(req, res) {
 // PATCH /api/reservations/:id/cancel
 export async function patchCancelReservation(req, res) {
   const { id } = req.params
-
-  if (!id || id.length !== 24) {
-    return sendError(res, 'Invalid reservation ID', 400)
-  }
+  if (!isValidObjectId(id)) return sendError(res, 'Invalid reservation ID', 400)
 
   try {
     const reservation = await cancelReservation(id)

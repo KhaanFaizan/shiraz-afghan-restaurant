@@ -14,6 +14,7 @@ import {
   getTables,
   toggleTableService,
 } from '../api/adminApi'
+import { extractApiError } from '../api/api'
 
 function todayStr() {
   return new Date().toISOString().slice(0, 10)
@@ -145,7 +146,7 @@ export default function AdminPage() {
       setReservations(prev => prev.map(r => r._id === id ? { ...r, status: 'CANCELLED' } : r))
       showToast('Reservation cancelled')
     } catch (err) {
-      showToast(err.response?.data?.message ?? 'Failed to cancel', 'error')
+      showToast(extractApiError(err, 'Failed to cancel reservation'), 'error')
     } finally {
       setCancelling(null)
     }
@@ -163,7 +164,7 @@ export default function AdminPage() {
       setModifyTarget(null)
       showToast('Reservation updated')
     } catch (err) {
-      setSaveError(err.response?.data?.message ?? 'Failed to update reservation')
+      setSaveError(extractApiError(err, 'Failed to update reservation'))
     } finally {
       setSaving(false)
     }
@@ -175,8 +176,8 @@ export default function AdminPage() {
       const { data } = await toggleTableService(id)
       setTables(prev => prev.map(t => t._id === id ? data.data : t))
       showToast(data.message)
-    } catch {
-      showToast('Failed to update table', 'error')
+    } catch (err) {
+      showToast(extractApiError(err, 'Failed to update table status'), 'error')
     } finally {
       setToggling(null)
     }

@@ -7,6 +7,7 @@ import TimeSlotsStep     from '../components/booking/TimeSlotsStep'
 import CustomerFormStep  from '../components/booking/CustomerFormStep'
 import ConfirmationStep  from '../components/booking/ConfirmationStep'
 import { getAvailability, createReservation } from '../api/bookingApi'
+import { extractApiError } from '../api/api'
 
 const INITIAL_FORM = {
   customerName:   '',
@@ -60,9 +61,7 @@ export default function BookingPage() {
       const { data } = await getAvailability(selectedDate, size)
       setSlots(data.data?.slots ?? [])
     } catch (err) {
-      setSlotsError(
-        err.response?.data?.message ?? 'Unable to load available times. Please try again.'
-      )
+      setSlotsError(extractApiError(err, 'Unable to load available times. Please try again.'))
     } finally {
       setSlotsLoading(false)
     }
@@ -102,9 +101,7 @@ export default function BookingPage() {
       setDirection(1)
       setStep(5)
     } catch (err) {
-      setSubmitError(
-        err.response?.data?.message ?? 'Something went wrong. Please try again.'
-      )
+      setSubmitError(extractApiError(err))
     } finally {
       setSubmitting(false)
     }
