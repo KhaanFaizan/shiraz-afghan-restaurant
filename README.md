@@ -598,4 +598,4 @@ This project was built to demonstrate both frontend craft and practical backend 
 
 The design reflects the brief: a premium feel for a real restaurant brand, using the provided assets, with original layout decisions rather than borrowing a template. The booking engine is genuinely functional: it validates, checks availability, prevents conflicts, and cleans up after itself.
 
-The engineering choices throughout — Zod for validation, BookingLock for concurrency, TTL indexes for cleanup, indexes for query performance, and a shared error helper on the frontend — were made deliberately and can be explained and defended.
+The engineering choices throughout — Zod for validation, BookingLock for concurrency, TTL indexes for cleanup, indexes for query performance, and a shared error helper on the frontend — were made deliberately for security purposes.
