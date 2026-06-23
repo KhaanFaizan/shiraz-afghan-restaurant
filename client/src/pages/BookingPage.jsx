@@ -126,8 +126,17 @@ export default function BookingPage() {
 
   // ── Render ─────────────────────────────────────────────────────────────────
   return (
-    <div className="min-h-screen bg-[#0a0a0a] pt-24 pb-20 px-4">
-      <div className="max-w-lg mx-auto">
+    <div className="relative min-h-screen bg-[#0a0a0a] pt-24 pb-20 px-4 overflow-hidden">
+      {/* Warm ambient glow — unique to the booking page */}
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-0"
+        style={{
+          background:
+            'radial-gradient(ellipse 70% 55% at 50% 20%, rgba(194,132,75,0.07) 0%, transparent 65%)',
+        }}
+      />
+      <div className="relative max-w-lg mx-auto">
 
         {/* Page header */}
         <motion.div

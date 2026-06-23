@@ -4,51 +4,56 @@ const ZONE_ORDER = ['Window', 'Main Hall', 'Family Area', 'Private Dining']
 
 function TableCard({ table, onToggle, toggling }) {
   const oos = table.isOutOfService
+  const isToggling = toggling === table._id
+
   return (
     <div
-      className={`relative p-4 border transition-all duration-300 ${
+      className={`relative p-5 border transition-all duration-300 ${
         oos
-          ? 'border-red-500/20 bg-red-500/5 opacity-70'
-          : 'border-[#2a2a2a] bg-[#1a1a1a] hover:border-[#c2844b]/30'
+          ? 'border-red-700/25 bg-red-900/8 opacity-60'
+          : 'border-[#2e2924] bg-[#131110] hover:border-[#c2844b]/30'
       }`}
     >
-      {/* Status indicator */}
-      <div className={`absolute top-3 right-3 w-2 h-2 rounded-full ${oos ? 'bg-red-400' : 'bg-emerald-400'}`} />
+      {/* Status dot */}
+      <div className={`absolute top-4 right-4 w-2.5 h-2.5 rounded-full ${oos ? 'bg-red-400' : 'bg-emerald-400'}`} />
 
-      {/* Table info */}
-      <div className="space-y-2 mb-4">
-        <p className="text-[#f7efe2] text-lg font-display">{table.name}</p>
-        <div className="flex items-center gap-3 text-xs text-[#c8bfb3]">
-          <span className="flex items-center gap-1">
-            <MapPin size={11} className="text-[#c2844b]" />
+      {/* Info */}
+      <div className="space-y-2 mb-5 pr-6">
+        <p className="text-[#f5efe6] text-[18px] font-display leading-none">{table.name}</p>
+        <div className="flex flex-wrap items-center gap-3 text-[13px] text-[#b8ada0]">
+          <span className="flex items-center gap-1.5">
+            <MapPin size={12} className="text-[#c2844b]/60" />
             {table.zone}
           </span>
-          <span className="flex items-center gap-1">
-            <Users size={11} className="text-[#c2844b]" />
-            {table.capacity} seats
+          <span className="flex items-center gap-1.5">
+            <Users size={12} className="text-[#c2844b]/60" />
+            {table.capacity}&nbsp;seats
           </span>
         </div>
       </div>
 
       {/* Status label */}
-      <p className={`text-[10px] tracking-widest uppercase mb-3 ${oos ? 'text-red-400' : 'text-emerald-400'}`}>
-        {oos ? 'Out of service' : 'In service'}
+      <p className={`text-[11px] tracking-[0.32em] uppercase mb-4 ${oos ? 'text-red-400/80' : 'text-emerald-400/80'}`}>
+        {oos ? '● Out of service' : '● In service'}
       </p>
 
-      {/* Toggle button */}
+      {/* Toggle */}
       <button
         onClick={() => onToggle(table._id)}
-        disabled={toggling === table._id}
-        className={`w-full py-1.5 text-[10px] tracking-widest uppercase border transition-all duration-200 flex items-center justify-center gap-1.5 ${
+        disabled={isToggling}
+        className={`w-full py-2.5 text-[11px] tracking-[0.28em] uppercase border transition-all duration-200 flex items-center justify-center gap-2 ${
           oos
-            ? 'border-emerald-500/40 text-emerald-400 hover:bg-emerald-500/10'
-            : 'border-red-500/30 text-red-400 hover:bg-red-500/10'
-        } disabled:opacity-40 disabled:cursor-not-allowed`}
+            ? 'border-emerald-600/35 text-emerald-400/80 hover:bg-emerald-900/20'
+            : 'border-red-600/30 text-red-400/80 hover:bg-red-900/15'
+        } disabled:opacity-30 disabled:cursor-not-allowed`}
       >
-        {oos
-          ? <><CheckCircle2 size={11} /> Mark Available</>
-          : <><WrenchIcon size={11} /> Out of Service</>
-        }
+        {isToggling ? (
+          <span className="animate-pulse">Updating…</span>
+        ) : oos ? (
+          <><CheckCircle2 size={13} />Mark Available</>
+        ) : (
+          <><WrenchIcon size={13} />Out of Service</>
+        )}
       </button>
     </div>
   )
@@ -57,26 +62,28 @@ function TableCard({ table, onToggle, toggling }) {
 export default function TablesPanel({ tables, loading, error, onToggle, toggling }) {
   if (loading) {
     return (
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
         {Array.from({ length: 8 }).map((_, i) => (
-          <div key={i} className="h-36 border border-[#2a2a2a] bg-[#1a1a1a] animate-pulse rounded" />
+          <div
+            key={i}
+            className="h-40 border border-[#2e2924] bg-[#131110] animate-pulse"
+            style={{ animationDelay: `${i * 60}ms` }}
+          />
         ))}
       </div>
     )
   }
 
   if (error) {
-    return <p className="text-red-400 text-sm text-center py-8">{error}</p>
+    return <p className="text-red-400 text-[14px] text-center py-10">{error}</p>
   }
 
-  // Group by zone in order
   const byZone = ZONE_ORDER.reduce((acc, zone) => {
     const zoneTables = tables.filter(t => t.zone === zone)
     if (zoneTables.length) acc[zone] = zoneTables
     return acc
   }, {})
 
-  // Include any zones not in ZONE_ORDER
   tables.forEach(t => {
     if (!ZONE_ORDER.includes(t.zone) && !byZone[t.zone]) {
       byZone[t.zone] = tables.filter(x => x.zone === t.zone)
@@ -84,11 +91,14 @@ export default function TablesPanel({ tables, loading, error, onToggle, toggling
   })
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       {Object.entries(byZone).map(([zone, zoneTables]) => (
         <div key={zone}>
-          <h3 className="text-[#c2844b] text-[10px] tracking-[0.35em] uppercase mb-3">{zone}</h3>
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="w-[3px] h-4 bg-[#c2844b]/60" />
+            <h3 className="text-[#b8ada0] text-[12px] tracking-[0.38em] uppercase">{zone}</h3>
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
             {zoneTables.map(table => (
               <TableCard
                 key={table._id}
