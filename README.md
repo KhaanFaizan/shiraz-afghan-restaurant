@@ -4,9 +4,9 @@
 
 | | URL |
 |---|---|
-| Frontend | *(deployment not yet configured)* |
-| Backend API | *(deployment not yet configured)* |
-| GitHub Repository | *(add repository URL here)* |
+| Frontend | [https://shiraz-afghan-restaurant-t79c.vercel.app](https://shiraz-afghan-restaurant-t79c.vercel.app) |
+| Backend API | [https://shiraz-afghan-restaurant.vercel.app](https://shiraz-afghan-restaurant.vercel.app) |
+| GitHub Repository | [https://github.com/KhaanFaizan/shiraz-afghan-restaurant](https://github.com/KhaanFaizan/shiraz-afghan-restaurant) |
 
 ---
 
